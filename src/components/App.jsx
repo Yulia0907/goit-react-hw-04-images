@@ -15,6 +15,7 @@ export default function App() {
   const [currentItem, setCurrentItem] = useState(null);
 
   useEffect(() => {
+    
     if (searchName === '') {
       return;
     }
