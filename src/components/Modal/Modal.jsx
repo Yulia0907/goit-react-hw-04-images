@@ -1,48 +1,37 @@
-import { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import '../../styles.css';
 
-export default class Modal extends Component {
-  static propTypes = {
-    onCloseModal: PropTypes.func.isRequired,
-    currentItem: PropTypes.objectOf({
-      largeURL: PropTypes.string.isRequired,
-      tags: PropTypes.string.isRequired,
-    }).isRequired,
-  };
+export default function Modal({ onCloseModal, currentItem }) {
+  useEffect(() => {
+    const onCloseByEscape = e => {
+      if (e.code === 'Escape') {
+        onCloseModal();
+      }
+    };
 
-  componentDidMount() {
-    window.addEventListener('keydown', this.onCloseByEscape);
-  }
+    window.addEventListener('keydown', onCloseByEscape);
+    return () => window.removeEventListener('keydown', onCloseByEscape);
+  }, [onCloseModal]);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.onCloseByEscape);
-  }
-
-  onCloseByEscape = e => {
-    if (e.code === 'Escape') {
-      this.props.onCloseModal();
-    }
-  };
-
-  onCloseByBackdrop = e => {
+  const onCloseByBackdrop = e => {
     if (e.currentTarget === e.target) {
-      this.props.onCloseModal();
+      onCloseModal();
     }
   };
-
-  render() {
-    console.log(this.props.currentItem);
-    const {
-      currentItem: { largeURL, tags },
-    } = this.props;
-
-    return (
-      <div className="Overlay" onClick={this.onCloseByBackdrop}>
-        <div className="Modal">
-          <img src={largeURL} alt={tags} />
-        </div>
+  return (
+    <div className="Overlay" onClick={onCloseByBackdrop}>
+      <div className="Modal">
+        <img src={currentItem.largeURL} alt={currentItem.tags} />
       </div>
-    );
-  }
+    </div>
+  );
 }
+
+Modal.propTypes = {
+  onCloseModal: PropTypes.func.isRequired,
+  currentItem: PropTypes.objectOf({
+    largeURL: PropTypes.string.isRequired,
+    tags: PropTypes.string.isRequired,
+  }).isRequired,
+};

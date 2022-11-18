@@ -1,91 +1,70 @@
-import { Component } from 'react';
-import { fetchImages} from '../Services/fetchImages';
-import {helpers} from '../Helper/Helper';
+import { useState, useEffect } from 'react';
+import { fetchImages } from '../services/fetchImages';
+import { helpers } from '../helper/helper';
 import Searchbar from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Button } from './Button/Button';
 import { Loader } from './Loader/Loader';
 import Modal from './Modal/Modal';
 
+export default function App() {
+  const [searchName, setSearchName] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentItem, setCurrentItem] = useState(null);
 
-export default class App extends Component {
-  state = {
-    searchName: '',
-    images: [],
-    totalImages: 0,
-    page: 1,
-    isLoading: false,
-    currentItem: null,
-  };
-
-  componentDidUpdate(prevProps, prevState) {
-    const prevName = prevState.searchName;
-    const nextName = this.state.searchName;
-    const prevPage = prevState.page;
-    const nextPage = this.state.page;
-
-    if (prevName !== nextName || prevPage !== nextPage) {
-      this.getImages();
+  useEffect(() => {
+    if (searchName === '') {
+      return;
     }
-  }
 
-  getImages = () => {
-    this.setState({ isLoading: true });
-
-    const { searchName, page } = this.state;
+    setIsLoading(true);
 
     fetchImages(searchName, page)
-      .then(({ data }) =>
-        this.setState(prevState => ({
-          images: [...prevState.images, ...helpers(data.hits)],
-          totalImages: data.totalHits,
-        }))
-      )
+      .then(resp => {
+        setImages(prevState => {
+          return [...prevState, ...helpers(resp)];
+        });
+      })
       .catch(error => console.log(error.message))
-      .finally(() => this.setState({ isLoading: false }));
-  };
+      .finally(() => setIsLoading(false));
+  }, [page, searchName]);
 
-  handleFormSubmit = searchName => {
-    if (searchName !== this.state.searchName) {
-      this.setState({ page: 1, images: [] });
+  const handleFormSubmit = searchNewName => {
+    if (searchNewName !== searchName) {
+      setImages([]);
+      setPage(1);
     }
 
-    this.setState({ searchName });
+    setSearchName(searchNewName);
   };
 
-  onClickButtonLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onClickButtonLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  onOpenModal = data => {
-    this.setState({
-      currentItem: data,
-    });
+  const onOpenModal = data => {
+    setCurrentItem(data);
   };
 
-  onCloseModal = () => {
-    this.setState({
-      currentItem: null,
-    });
+  const onCloseModal = () => {
+    setCurrentItem(null);
   };
 
-  render() {
-    const { images, isLoading, currentItem } = this.state;
-    return (
-      <div>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        {images.length !== 0 && (
-          <>
-            <ImageGallery images={images} onClickGallery={this.onOpenModal} />
-            {!isLoading && <Button onClick={this.onClickButtonLoadMore}/>}
-          </>
-        )}
-        {isLoading && <Loader/>}
-        {currentItem && (
-          <Modal onCloseModal={this.onCloseModal} currentItem={currentItem} />
-        )}
-      </div>
-    );
-  }
+  return (
+    <>
+      <Searchbar onSubmit={handleFormSubmit} />
+      {images.length !== 0 && (
+        <>
+          <ImageGallery images={images} onClickGallery={onOpenModal} />
+          {!isLoading && <Button onClick={onClickButtonLoadMore} />}
+        </>
+      )}
+      {isLoading && <Loader />}
+      {currentItem && (
+        <Modal onCloseModal={onCloseModal} currentItem={currentItem} />
+      )}
+    </>
+  );
 }
-
